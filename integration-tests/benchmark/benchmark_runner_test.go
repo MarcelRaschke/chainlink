@@ -310,13 +310,11 @@ func benchmarkTestHelper(
 	testEnvironment *environment.Environment,
 	activeEVMNetwork *blockchain.EVMNetwork,
 ) {
-	exeFile, exeFileSize, err := actions.BuildGoTests("./", "./tests", "../")
-	require.NoError(t, err, "Error building go tests")
 
 	remoteRunnerValues := map[string]interface{}{
-		"test_name":             testTag,
+		"focus":                 testTag,
 		"env_namespace":         testEnvironment.Cfg.Namespace,
-		"test_file_size":        fmt.Sprint(exeFileSize),
+		"test_dir":              "./integration-tests/benchmark/tests",
 		"test_log_level":        "debug",
 		"grafana_dashboard_url": os.Getenv("GRAFANA_DASHBOARD_URL"),
 		"NUMBEROFCONTRACTS":     os.Getenv("NUMBEROFCONTRACTS"),
@@ -344,7 +342,7 @@ func benchmarkTestHelper(
 		},
 	}
 
-	err = testEnvironment.
+	err := testEnvironment.
 		AddHelm(remotetestrunner.New(remoteRunnerWrapper)).
 		AddHelm(ethereum.New(&ethereum.Props{
 			NetworkName: activeEVMNetwork.Name,
@@ -365,6 +363,6 @@ func benchmarkTestHelper(
 		})).
 		Run()
 	require.NoError(t, err, "Error launching test environment")
-	err = actions.TriggerRemoteTest(exeFile, testEnvironment)
+	err = actions.TriggerRemoteTest("../../", testEnvironment)
 	require.NoError(t, err, "Error activating remote test")
 }
