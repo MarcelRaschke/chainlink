@@ -69,6 +69,8 @@ var defaultRegistryConfig = contracts.KeeperRegistrySettings{
 	MaxPerformGas:        uint32(5000000),
 	FallbackGasPrice:     big.NewInt(2e11),
 	FallbackLinkPrice:    big.NewInt(2e18),
+	MaxCheckDataSize:     uint32(100),
+	MaxPerformDataSize:   uint32(100),
 }
 
 var lowBCPTRegistryConfig = contracts.KeeperRegistrySettings{
@@ -112,12 +114,13 @@ var _ = Describe("Keeper Suite @keeper", func() {
 		chainlinkNodes       []*client.Chainlink
 		testEnvironment      *environment.Environment
 		OCR                  = true
+		ocrConfig            contracts.OCRConfig
 
 		testScenarios = []TableEntry{
 			//Entry("v1.1 Basic smoke test @simulated", ethereum.RegistryVersion_1_1, defaultRegistryConfig, BasicCounter, BasicSmokeTest, big.NewInt(defaultLinkFunds), !OCR),
 			//Entry("v1.2 Basic smoke test @simulated", ethereum.RegistryVersion_1_2, defaultRegistryConfig, BasicCounter, BasicSmokeTest, big.NewInt(defaultLinkFunds), !OCR),
-			//Entry("v1.3 Basic smoke test @simulated", ethereum.RegistryVersion_1_3, defaultRegistryConfig, BasicCounter, BasicSmokeTest, big.NewInt(defaultLinkFunds), !OCR),
-			Entry("v2.0 Basic smoke test @simulated", ethereum.RegistryVersion_2_0, defaultRegistryConfig, BasicCounter, BasicSmokeTest, big.NewInt(defaultLinkFunds), OCR),
+			Entry("v1.3 Basic smoke test @simulated", ethereum.RegistryVersion_1_3, defaultRegistryConfig, BasicCounter, BasicSmokeTest, big.NewInt(defaultLinkFunds), !OCR),
+			//Entry("v2.0 Basic smoke test @simulated", ethereum.RegistryVersion_2_0, defaultRegistryConfig, BasicCounter, BasicSmokeTest, big.NewInt(defaultLinkFunds), OCR),
 
 			//Entry("v1.1 BCPT test @simulated", ethereum.RegistryVersion_1_1, highBCPTRegistryConfig, BasicCounter, BcptTest, big.NewInt(defaultLinkFunds), !OCR),
 			//Entry("v1.2 BCPT test @simulated", ethereum.RegistryVersion_1_2, highBCPTRegistryConfig, BasicCounter, BcptTest, big.NewInt(defaultLinkFunds), !OCR),
@@ -259,10 +262,13 @@ var _ = Describe("Keeper Suite @keeper", func() {
 			mockServer, err := ctfClient.ConnectMockServer(testEnvironment)
 			Expect(err).ShouldNot(HaveOccurred(), "Creating mockserver clients shouldn't fail")
 			actions.CreateOCRKeeperJobs(chainlinkNodes, mockServer, registry.Address(), network.ChainID)
+			ocrConfig = actions.BuildOCRConfigVars(chainlinkNodes, registryConfig, registrar.Address())
+			err = registry.SetConfig(defaultRegistryConfig, ocrConfig)
+			Expect(err).ShouldNot(HaveOccurred(), "Registry config should be be set successfully")
 		} else {
 			// legacy non-OCR
 			By("Register Keeper Jobs")
-			actions.CreateKeeperJobs(chainlinkNodes, registry)
+			actions.CreateKeeperJobs(chainlinkNodes, registry, ocrConfig)
 			err = chainClient.WaitForEvents()
 			Expect(err).ShouldNot(HaveOccurred(), "Error creating keeper jobs")
 		}
@@ -469,7 +475,7 @@ var _ = Describe("Keeper Suite @keeper", func() {
 			}, "1m", "1s").Should(Succeed())
 
 			// Now set BCPT to be low, so keepers change turn frequently
-			err = registry.SetConfig(lowBCPTRegistryConfig)
+			err = registry.SetConfig(lowBCPTRegistryConfig, ocrConfig)
 			Expect(err).ShouldNot(HaveOccurred(), "Registry config should be be set successfully")
 			err = chainClient.WaitForEvents()
 			Expect(err).ShouldNot(HaveOccurred(), "Error waiting for set config tx")
@@ -591,7 +597,10 @@ var _ = Describe("Keeper Suite @keeper", func() {
 			// Now increase checkGasLimit on registry
 			highCheckGasLimit := defaultRegistryConfig
 			highCheckGasLimit.CheckGasLimit = uint32(5000000)
-			err = registry.SetConfig(highCheckGasLimit)
+			if OCR {
+				ocrConfig = actions.BuildOCRConfigVars(chainlinkNodes, highCheckGasLimit, registrar.Address())
+			}
+			err = registry.SetConfig(highCheckGasLimit, ocrConfig)
 			Expect(err).ShouldNot(HaveOccurred(), "Registry config should be be set successfully")
 			err = chainClient.WaitForEvents()
 			Expect(err).ShouldNot(HaveOccurred(), "Error waiting for set config tx")
@@ -719,7 +728,7 @@ var _ = Describe("Keeper Suite @keeper", func() {
 				Expect(err).ShouldNot(HaveOccurred(), "Encountered error when building the payee list")
 			}
 
-			err = registry.SetKeepers(newKeeperList, payees)
+			err = registry.SetKeepers(newKeeperList, payees, ocrConfig)
 			Expect(err).ShouldNot(HaveOccurred(), "Encountered error when setting the new list of Keepers")
 			err = chainClient.WaitForEvents()
 			Expect(err).ShouldNot(HaveOccurred(), "Failed to wait for events")
@@ -793,7 +802,7 @@ var _ = Describe("Keeper Suite @keeper", func() {
 			)
 
 			// Set the jobs for the second registry
-			actions.CreateKeeperJobs(chainlinkNodes, secondRegistry)
+			actions.CreateKeeperJobs(chainlinkNodes, secondRegistry, ocrConfig)
 			err = chainClient.WaitForEvents()
 			Expect(err).ShouldNot(HaveOccurred(), "Error creating keeper jobs")
 
