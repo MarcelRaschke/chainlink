@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/smartcontractkit/chainlink/core/logger"
 	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
@@ -19,9 +20,11 @@ type HTTPClient interface {
 }
 
 type MercuryTransmitter struct {
-	lggr        logger.Logger
-	httpClient  HTTPClient
-	fromAccount string
+	lggr       logger.Logger
+	httpClient HTTPClient
+
+	fromAccount common.Address
+	contract    common.Address
 
 	reportURL string
 	username  string
@@ -32,17 +35,19 @@ type MercuryReport struct {
 	ReportCtx  ocrtypes.ReportContext
 	Report     ocrtypes.Report
 	Signatures []ocrtypes.AttributedOnchainSignature
-	Identifier string
+
+	FromAccount     common.Address
+	ContractAddress common.Address
 }
 
-func NewTransmitter(lggr logger.Logger, fromAccount string, httpClient HTTPClient, reportURL, username, password string) *MercuryTransmitter {
-	return &MercuryTransmitter{lggr.Named("Mercury"), httpClient, fromAccount, reportURL, username, password}
+func NewTransmitter(lggr logger.Logger, contractAddress, fromAccount common.Address, httpClient HTTPClient, reportURL, username, password string) *MercuryTransmitter {
+	return &MercuryTransmitter{lggr.Named("Mercury"), httpClient, contractAddress, fromAccount, reportURL, username, password}
 }
 
 // Transmit sends the report to the on-chain smart contract's Transmit method.
 func (mt *MercuryTransmitter) Transmit(ctx context.Context, reportCtx ocrtypes.ReportContext, report ocrtypes.Report, signatures []ocrtypes.AttributedOnchainSignature) error {
 	mt.lggr.Debugw("Transmitting report", "report", report, "reportCtx", reportCtx, "signatures", signatures)
-	mr := MercuryReport{reportCtx, report, signatures, mt.fromAccount}
+	mr := MercuryReport{reportCtx, report, signatures, mt.fromAccount, mt.contract}
 
 	b, err := json.Marshal(mr)
 	if err != nil {
@@ -75,7 +80,7 @@ func (mt *MercuryTransmitter) Transmit(ctx context.Context, reportCtx ocrtypes.R
 }
 
 func (mt *MercuryTransmitter) FromAccount() ocrtypes.Account {
-	return ocrtypes.Account(mt.fromAccount)
+	return ocrtypes.Account(mt.fromAccount.Hex())
 }
 
 // LatestConfigDigestAndEpoch retrieves the latest config digest and epoch from the OCR2 contract.

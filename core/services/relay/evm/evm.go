@@ -313,10 +313,10 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 	// HACK: For now, override on-chain transmitter with Mercury if the URL is
 	// set
 	if reportURL := os.Getenv("CL_MERCURY_REPORT_URL"); reportURL != "" {
-		effectiveTransmitterAddress := relayConfig.EffectiveTransmitterAddress.String
+		effectiveTransmitterAddress := relayConfig.EffectiveTransmitterAddress
 		username := os.Getenv("CL_MERCURY_USERNAME")
 		password := os.Getenv("CL_MERCURY_PASSWORD")
-		contractTransmitter = mercury.NewTransmitter(r.lggr, effectiveTransmitterAddress, http.DefaultClient, reportURL, username, password)
+		contractTransmitter = mercury.NewTransmitter(r.lggr, configWatcher.contractAddress, effectiveTransmitterAddress, http.DefaultClient, reportURL, username, password)
 	} else {
 		contractTransmitter, err = newContractTransmitter(r.lggr, rargs, pargs.TransmitterID, configWatcher)
 		if err != nil {
