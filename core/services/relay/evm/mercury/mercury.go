@@ -32,6 +32,7 @@ type MercuryReport struct {
 	ReportCtx  ocrtypes.ReportContext
 	Report     ocrtypes.Report
 	Signatures []ocrtypes.AttributedOnchainSignature
+	Identifier string
 }
 
 func NewTransmitter(lggr logger.Logger, fromAccount string, httpClient HTTPClient, reportURL, username, password string) *MercuryTransmitter {
@@ -41,7 +42,7 @@ func NewTransmitter(lggr logger.Logger, fromAccount string, httpClient HTTPClien
 // Transmit sends the report to the on-chain smart contract's Transmit method.
 func (mt *MercuryTransmitter) Transmit(ctx context.Context, reportCtx ocrtypes.ReportContext, report ocrtypes.Report, signatures []ocrtypes.AttributedOnchainSignature) error {
 	mt.lggr.Debugw("Transmitting report", "report", report, "reportCtx", reportCtx, "signatures", signatures)
-	mr := MercuryReport{reportCtx, report, signatures}
+	mr := MercuryReport{reportCtx, report, signatures, mt.fromAccount}
 
 	b, err := json.Marshal(mr)
 	if err != nil {
