@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median"
 	"github.com/smartcontractkit/libocr/offchainreporting2/reportingplugin/median/evmreportcodec"
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
+	ocrtypes "github.com/smartcontractkit/libocr/offchainreporting2/types"
 	"github.com/smartcontractkit/sqlx"
 	"gopkg.in/guregu/null.v4"
 
@@ -27,6 +30,7 @@ import (
 	"github.com/smartcontractkit/chainlink/core/services/job"
 	"github.com/smartcontractkit/chainlink/core/services/ocrcommon"
 	"github.com/smartcontractkit/chainlink/core/services/pipeline"
+	"github.com/smartcontractkit/chainlink/core/services/relay/evm/mercury"
 	"github.com/smartcontractkit/chainlink/core/utils"
 )
 
@@ -299,10 +303,27 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 	if err != nil {
 		return nil, err
 	}
-	contractTransmitter, err := newContractTransmitter(r.lggr, rargs, pargs.TransmitterID, configWatcher)
-	if err != nil {
+
+	var relayConfig RelayConfig
+	if err := json.Unmarshal(rargs.RelayConfig, &relayConfig); err != nil {
 		return nil, err
 	}
+
+	var contractTransmitter ocrtypes.ContractTransmitter
+	// HACK: For now, override on-chain transmitter with Mercury if the URL is
+	// set
+	if reportURL := os.Getenv("CL_MERCURY_REPORT_URL"); reportURL != "" {
+		effectiveTransmitterAddress := relayConfig.EffectiveTransmitterAddress.String
+		username := os.Getenv("CL_MERCURY_USERNAME")
+		password := os.Getenv("CL_MERCURY_PASSWORD")
+		contractTransmitter = mercury.NewTransmitter(r.lggr, effectiveTransmitterAddress, http.DefaultClient, reportURL, username, password)
+	} else {
+		contractTransmitter, err = newContractTransmitter(r.lggr, rargs, pargs.TransmitterID, configWatcher)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	medianContract, err := newMedianContract(configWatcher.contractAddress, configWatcher.chain, rargs.JobID, r.db, r.lggr)
 	if err != nil {
 		return nil, err
@@ -326,7 +347,7 @@ var _ relaytypes.MedianProvider = (*medianProvider)(nil)
 
 type medianProvider struct {
 	*configWatcher
-	contractTransmitter *ContractTransmitter
+	contractTransmitter ocrtypes.ContractTransmitter
 	reportCodec         median.ReportCodec
 	medianContract      *medianContract
 }

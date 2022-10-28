@@ -27,6 +27,7 @@ require (
 	github.com/gin-contrib/size v0.0.0-20220707104239-f5a650759656
 	github.com/gin-gonic/contrib v0.0.0-20201101042839-6a891bf89f19
 	github.com/gin-gonic/gin v1.8.1
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.3
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1
 	github.com/google/uuid v1.3.0
