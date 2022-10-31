@@ -1,13 +1,9 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/smartcontractkit/wsrpc/peer"
 )
 
 func handleReports(w http.ResponseWriter, req *http.Request) {
@@ -40,22 +36,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-type pingServer struct{}
-
-func (s *pingServer) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
-	// Extracts the connection client's public key.
-	// You can use this to identify the client
-	p, ok := peer.FromContext(ctx)
-	if !ok {
-		return nil, errors.New("could not extract public key")
-	}
-	pubKey := p.PublicKey
-
-	fmt.Println(pubKey)
-
-	return &pb.PingResponse{
-		Body: "Pong",
-	}, nil
 }
