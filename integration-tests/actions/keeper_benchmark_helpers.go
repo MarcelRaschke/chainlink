@@ -3,14 +3,16 @@ package actions
 //revive:disable:dot-imports
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/common"
-	. "github.com/onsi/gomega"
-	"github.com/rs/zerolog/log"
 	"math"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	. "github.com/onsi/gomega"
+	"github.com/rs/zerolog/log"
+
 	"github.com/smartcontractkit/chainlink-testing-framework/blockchain"
 	"github.com/smartcontractkit/chainlink-testing-framework/contracts/ethereum"
+
 	"github.com/smartcontractkit/chainlink/integration-tests/contracts"
 )
 
@@ -60,7 +62,7 @@ func DeployBenchmarkKeeperContracts(
 		RegistryAddr:          registry.Address(),
 		MinLinkJuels:          big.NewInt(0),
 	}
-	registrar := DeployKeeperRegistrar(linkToken, registrarSettings, contractDeployer, client, registry)
+	registrar := DeployKeeperRegistrar(registryVersion, linkToken, registrarSettings, contractDeployer, client, registry)
 
 	upkeeps := DeployKeeperConsumersBenchmark(contractDeployer, client, numberOfContracts, blockRange, blockInterval, checkGasToBurn, performGasToBurn, firstEligibleBuffer, predeployedContracts, upkeepResetterAddress)
 
