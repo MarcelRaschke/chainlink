@@ -310,18 +310,24 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 	}
 
 	var contractTransmitter ocrtypes.ContractTransmitter
+	var reportCodec median.ReportCodec
 	// HACK: For now, override on-chain transmitter with Mercury if the URL is
 	// set
 	if reportURL := os.Getenv("CL_MERCURY_REPORT_URL"); reportURL != "" {
-		effectiveTransmitterAddress := relayConfig.EffectiveTransmitterAddress
+		if !relayConfig.EffectiveTransmitterAddress.Valid {
+			return nil, errors.New("EffectiveTransmitterAddress must be specified")
+		}
+		effectiveTransmitterAddress := common.HexToAddress(relayConfig.EffectiveTransmitterAddress.String)
 		username := os.Getenv("CL_MERCURY_USERNAME")
 		password := os.Getenv("CL_MERCURY_PASSWORD")
 		contractTransmitter = mercury.NewTransmitter(r.lggr, configWatcher.contractAddress, effectiveTransmitterAddress, http.DefaultClient, reportURL, username, password)
+		reportCodec = mercury.ReportCodec{}
 	} else {
 		contractTransmitter, err = newContractTransmitter(r.lggr, rargs, pargs.TransmitterID, configWatcher)
 		if err != nil {
 			return nil, err
 		}
+		reportCodec = evmreportcodec.ReportCodec{}
 	}
 
 	medianContract, err := newMedianContract(configWatcher.contractAddress, configWatcher.chain, rargs.JobID, r.db, r.lggr)
@@ -330,7 +336,7 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 	}
 	return &medianProvider{
 		configWatcher:       configWatcher,
-		reportCodec:         evmreportcodec.ReportCodec{},
+		reportCodec:         reportCodec,
 		contractTransmitter: contractTransmitter,
 		medianContract:      medianContract,
 	}, nil
