@@ -371,7 +371,7 @@ replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
 // Fixes for Mercury
-replace github.com/smartcontractkit/libocr => github.com/samsondav/libocr v0.0.0-20221031201429-03bde1d85ab1
+replace github.com/smartcontractkit/libocr => github.com/samsondav/libocr v0.0.0-20221031211747-bbc21282de2d
 
 exclude (
 	github.com/influxdata/influxdb v1.8.3
