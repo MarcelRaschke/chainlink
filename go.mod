@@ -27,7 +27,6 @@ require (
 	github.com/gin-contrib/size v0.0.0-20220707104239-f5a650759656
 	github.com/gin-gonic/contrib v0.0.0-20201101042839-6a891bf89f19
 	github.com/gin-gonic/gin v1.8.1
-	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.3
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1
 	github.com/google/uuid v1.3.0
@@ -370,6 +369,9 @@ replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.
 // Fix go mod tidy issue for ambiguous imports from go-ethereum
 // See https://github.com/ugorji/go/issues/279
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
+
+// Fixes for Mercury
+replace github.com/smartcontractkit/libocr => github.com/samsondav/libocr v0.0.0-20221031201429-03bde1d85ab1
 
 exclude (
 	github.com/influxdata/influxdb v1.8.3
