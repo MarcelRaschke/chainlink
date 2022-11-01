@@ -1302,16 +1302,17 @@ func Test_validateEnv(t *testing.T) {
 	validate := func() error { _, err := utils.MultiErrorList(validateEnv()); return err }
 	t.Setenv("LOG_LEVEL", "warn")
 	t.Setenv("DATABASE_URL", "foo")
-	assert.ErrorContains(t, validate(), `environment variables DATABASE_URL and CL_DATABASE_URL must be equal, or CL_DATABASE_URL must not be set`)
+	assert.ErrorContains(t, validate(), `2 errors:
+	- environment variable DATABASE_URL must not be set: unsupported with config v2
+	- environment variable LOG_LEVEL must not be set: unsupported with config v2`)
 
-	t.Setenv("CL_DATABASE_URL", "foo")
-	assert.NoError(t, validate())
-
-	t.Setenv("CL_DATABASE_URL", "bar")
 	t.Setenv("GAS_UPDATER_ENABLED", "true")
 	t.Setenv("ETH_GAS_BUMP_TX_DEPTH", "7")
-	assert.ErrorContains(t, validate(), `3 errors:
-	- environment variables DATABASE_URL and CL_DATABASE_URL must be equal, or CL_DATABASE_URL must not be set
+	assert.ErrorContains(t, validate(), `4 errors:
+	- environment variable DATABASE_URL must not be set: unsupported with config v2
+	- environment variable LOG_LEVEL must not be set: unsupported with config v2
 	- environment variable ETH_GAS_BUMP_TX_DEPTH must not be set: unsupported with config v2
 	- environment variable GAS_UPDATER_ENABLED must not be set: unsupported with config v2`)
 }
+
+func ptr[T any](t T) *T { return &t }

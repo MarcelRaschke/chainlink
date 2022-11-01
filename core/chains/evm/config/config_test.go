@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/smartcontractkit/chainlink/core/assets"
-	evmconfig "github.com/smartcontractkit/chainlink/core/chains/evm/config"
 	v2 "github.com/smartcontractkit/chainlink/core/chains/evm/config/v2"
 	"github.com/smartcontractkit/chainlink/core/config"
 	"github.com/smartcontractkit/chainlink/core/internal/testutils"
@@ -299,10 +298,9 @@ func Test_chainScopedConfig_Validate(t *testing.T) {
 	}
 
 	// Validate built-in
-	for id := range evmconfig.ChainSpecificConfigDefaultSets() {
-		id := id
-		t.Run(fmt.Sprintf("chainID-%d", id), func(t *testing.T) {
-			cfg := configWithChain(t, id, nil)
+	for _, id := range v2.DefaultIDs {
+		t.Run(fmt.Sprintf("chainID-%s", id.String()), func(t *testing.T) {
+			cfg := configWithChain(t, id.Int64(), nil)
 			assert.NoError(t, cfg.Validate())
 		})
 	}
