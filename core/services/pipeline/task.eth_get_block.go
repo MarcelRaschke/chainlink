@@ -26,7 +26,7 @@ type ETHGetBlockTask struct {
 var _ Task = (*ETHGetBlockTask)(nil)
 
 func (t *ETHGetBlockTask) Type() TaskType {
-	return TaskTypeETHCurrentBlock
+	return TaskTypeETHGetBlock
 }
 
 func (t *ETHGetBlockTask) Run(ctx context.Context, lggr logger.Logger, vars Vars, inputs []Result) (result Result, runInfo RunInfo) {

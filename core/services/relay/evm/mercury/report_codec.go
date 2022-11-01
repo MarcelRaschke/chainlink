@@ -10,6 +10,18 @@ import (
 	"github.com/smartcontractkit/libocr/offchainreporting2/types"
 )
 
+// NOTE:
+// This report codec is a copy/paste of the original median evmreportcodec
+// here:
+// https://github.com/smartcontractkit/offchain-reporting/blob/master/lib/offchainreporting2/reportingplugin/median/evmreportcodec/reportcodec.go
+//
+// As a hack, blockNumber is substituted for juelsPerFeeCoin.
+//
+// Feed ID is a constant that comes from the jobspec and is added to the report also.
+//
+// A prettier implementation is dependent on the generic libocr median plugin,
+// here: https://github.com/smartcontractkit/offchain-reporting/pull/386/files
+
 var reportTypes = getReportTypes()
 
 func getReportTypes() abi.Arguments {
@@ -30,9 +42,11 @@ func getReportTypes() abi.Arguments {
 
 var _ median.ReportCodec = ReportCodec{}
 
-type ReportCodec struct{}
+type ReportCodec struct {
+	FeedID [32]byte
+}
 
-func (ReportCodec) BuildReport(paos []median.ParsedAttributedObservation) (types.Report, error) {
+func (r ReportCodec) BuildReport(paos []median.ParsedAttributedObservation) (types.Report, error) {
 	if len(paos) == 0 {
 		return nil, fmt.Errorf("cannot build report from empty attributed observations")
 	}
@@ -47,10 +61,11 @@ func (ReportCodec) BuildReport(paos []median.ParsedAttributedObservation) (types
 	timestamp := paos[len(paos)/2].Timestamp
 
 	// get median juelsPerFeeCoin
+	// HACK: This is actually the block number!
 	sort.Slice(paos, func(i, j int) bool {
 		return paos[i].JuelsPerFeeCoin.Cmp(paos[j].JuelsPerFeeCoin) < 0
 	})
-	juelsPerFeeCoin := paos[len(paos)/2].JuelsPerFeeCoin
+	blockNumber := paos[len(paos)/2].JuelsPerFeeCoin
 
 	// sort by values
 	sort.Slice(paos, func(i, j int) bool {
@@ -65,7 +80,7 @@ func (ReportCodec) BuildReport(paos []median.ParsedAttributedObservation) (types
 		observations = append(observations, pao.Value)
 	}
 
-	reportBytes, err := reportTypes.Pack(timestamp, observers, observations, juelsPerFeeCoin)
+	reportBytes, err := reportTypes.Pack(timestamp, observers, observations, blockNumber, r.FeedID)
 	return types.Report(reportBytes), err
 }
 
@@ -98,24 +113,5 @@ func (ReportCodec) MedianFromReport(report types.Report) (*big.Int, error) {
 }
 
 func (ReportCodec) MaxReportLength(n int) int {
-	return 32 /* timestamp */ + 32 /* rawObservers */ + (2*32 + n*32) /*observations*/ + 32 /* juelsPerFeeCoin */
-}
-
-func (ReportCodec) XXXJuelsPerFeeCoinFromReport(report types.Report) (*big.Int, error) {
-	reportElems := map[string]interface{}{}
-	if err := reportTypes.UnpackIntoMap(reportElems, report); err != nil {
-		return nil, fmt.Errorf("error during unpack: %w", err)
-	}
-
-	juelsPerFeeCoinInterface, ok := reportElems["juelsPerFeeCoin"]
-	if !ok {
-		return nil, fmt.Errorf("unpacked report has no 'juelsPerFeeCoin'")
-	}
-
-	juelsPerFeeCoin, ok := juelsPerFeeCoinInterface.(*big.Int)
-	if !ok {
-		return nil, fmt.Errorf("cannot cast juelsPerFeeCoin to *big.Int, type is %T", juelsPerFeeCoinInterface)
-	}
-
-	return juelsPerFeeCoin, nil
+	return 32 /* timestamp */ + 32 /* rawObservers */ + (2*32 + n*32) /*observations*/ + 32 /* blockNumber */ + 32 /* feedID */
 }

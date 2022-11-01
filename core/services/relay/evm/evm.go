@@ -321,7 +321,17 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 		username := os.Getenv("CL_MERCURY_USERNAME")
 		password := os.Getenv("CL_MERCURY_PASSWORD")
 		contractTransmitter = mercury.NewTransmitter(r.lggr, configWatcher.contractAddress, effectiveTransmitterAddress, http.DefaultClient, reportURL, username, password)
-		reportCodec = mercury.ReportCodec{}
+		if relayConfig.FeedID == "" {
+			return nil, errors.New("FeedID must be specified")
+		}
+		feedID := [32]byte{}
+		for i, ch := range []byte(relayConfig.FeedID) {
+			if i > 31 {
+				break
+			}
+			feedID[i] = ch
+		}
+		reportCodec = mercury.ReportCodec{FeedID: feedID}
 	} else {
 		contractTransmitter, err = newContractTransmitter(r.lggr, rargs, pargs.TransmitterID, configWatcher)
 		if err != nil {
@@ -343,6 +353,7 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 }
 
 type RelayConfig struct {
+	FeedID                      string         `json:"feedID"`
 	ChainID                     *utils.Big     `json:"chainID"`
 	FromBlock                   uint64         `json:"fromBlock"`
 	EffectiveTransmitterAddress null.String    `json:"effectiveTransmitterAddress"`
