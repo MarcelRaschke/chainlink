@@ -314,6 +314,7 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 	// HACK: For now, override on-chain transmitter with Mercury if the URL is
 	// set
 	if reportURL := os.Getenv("CL_MERCURY_REPORT_URL"); reportURL != "" {
+		fmt.Println("BALLS MERCURY ENABLED")
 		if !relayConfig.EffectiveTransmitterAddress.Valid {
 			return nil, errors.New("EffectiveTransmitterAddress must be specified")
 		}
@@ -340,7 +341,7 @@ func (r *Relayer) NewMedianProvider(rargs relaytypes.RelayArgs, pargs relaytypes
 		reportCodec = evmreportcodec.ReportCodec{}
 	}
 
-	medianContract, err := newMedianContract(configWatcher.contractAddress, configWatcher.chain, rargs.JobID, r.db, r.lggr)
+	medianContract, err := newMedianContract(configWatcher.ContractConfigTracker(), configWatcher.contractAddress, configWatcher.chain, rargs.JobID, r.db, r.lggr)
 	if err != nil {
 		return nil, err
 	}

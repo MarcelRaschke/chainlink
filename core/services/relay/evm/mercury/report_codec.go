@@ -36,7 +36,8 @@ func getReportTypes() abi.Arguments {
 		{Name: "observationsTimestamp", Type: mustNewType("uint32")},
 		{Name: "rawObservers", Type: mustNewType("bytes32")},
 		{Name: "observations", Type: mustNewType("int192[]")},
-		{Name: "juelsPerFeeCoin", Type: mustNewType("int192")},
+		{Name: "blockNumber", Type: mustNewType("int192")},
+		{Name: "feedID", Type: mustNewType("bytes32")},
 	})
 }
 
@@ -79,6 +80,12 @@ func (r ReportCodec) BuildReport(paos []median.ParsedAttributedObservation) (typ
 		observers[i] = byte(pao.Observer)
 		observations = append(observations, pao.Value)
 	}
+
+	fmt.Println("BALLS BuildReport timestamp", timestamp)
+	fmt.Println("BALLS BuildReport observers", observers)
+	fmt.Println("BALLS BuildReport observations", observations)
+	fmt.Println("BALLS BuildReport blockNumber", blockNumber)
+	fmt.Println("BALLS BuildReport feedID", string(r.FeedID[:]))
 
 	reportBytes, err := reportTypes.Pack(timestamp, observers, observations, blockNumber, r.FeedID)
 	return types.Report(reportBytes), err

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -41,12 +42,13 @@ type MercuryReport struct {
 }
 
 func NewTransmitter(lggr logger.Logger, contractAddress, fromAccount common.Address, httpClient HTTPClient, reportURL, username, password string) *MercuryTransmitter {
-	return &MercuryTransmitter{lggr.Named("Mercury"), httpClient, contractAddress, fromAccount, reportURL, username, password}
+	return &MercuryTransmitter{lggr.Named("Mercury"), httpClient, fromAccount, contractAddress, reportURL, username, password}
 }
 
 // Transmit sends the report to the on-chain smart contract's Transmit method.
 func (mt *MercuryTransmitter) Transmit(ctx context.Context, reportCtx ocrtypes.ReportContext, report ocrtypes.Report, signatures []ocrtypes.AttributedOnchainSignature) error {
-	mt.lggr.Debugw("Transmitting report", "report", report, "reportCtx", reportCtx, "signatures", signatures)
+	fmt.Println("BALLS Transmit")
+	mt.lggr.Infow("Transmitting report", "report", report, "reportCtx", reportCtx, "signatures", signatures)
 	mr := MercuryReport{reportCtx, report, signatures, mt.fromAccount, mt.contract}
 
 	b, err := json.Marshal(mr)
@@ -74,7 +76,13 @@ func (mt *MercuryTransmitter) Transmit(ctx context.Context, reportCtx ocrtypes.R
 		mt.lggr.Errorw("Failed to read response body", "err", err)
 	}
 
-	mt.lggr.Debugw("Transmitted report", "responseStatus", res.Status, "reponseBody", string(respBody), "reportCtx", reportCtx)
+	fmt.Println("BALLS Transmit 2")
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		mt.lggr.Infow("Transmit report success", "responseStatus", res.Status, "reponseBody", string(respBody), "reportCtx", reportCtx)
+	} else {
+		mt.lggr.Errorw("Transmit report failed", "responseStatus", res.Status, "reponseBody", string(respBody), "reportCtx", reportCtx)
+
+	}
 
 	return nil
 }

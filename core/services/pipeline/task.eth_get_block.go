@@ -14,7 +14,9 @@ import (
 
 // Return types:
 //
-// *evmtypes.Head
+// []byte
+//
+// (marshalled JSON)
 type ETHGetBlockTask struct {
 	BaseTask   `mapstructure:",squash"`
 	EVMChainID string `json:"evmChainID" mapstructure:"evmChainID"`
@@ -41,15 +43,22 @@ func (t *ETHGetBlockTask) Run(ctx context.Context, lggr logger.Logger, vars Vars
 		return Result{Error: err}, runInfo
 	}
 
-	chain, err := getChainByString(t.chainSet, string(chainID))
-	if err != nil {
-		return Result{Error: err}, runInfo
-	}
+	// chain, err := getChainByString(t.chainSet, string(chainID))
+	// if err != nil {
+	//     return Result{Error: err}, runInfo
+	// }
 
-	head, err := chain.Client().HeadByNumber(ctx, nil)
-	if err != nil {
-		return Result{Error: err}, runInfo
-	}
+	// head, err := chain.Client().HeadByNumber(ctx, nil)
+	// if err != nil {
+	//     return Result{Error: err}, runInfo
+	// }
+	// b, err := json.Marshal(head)
+	// if err != nil {
+	//     return Result{Error: err}, runInfo
+	// }
+	// HACK: Fix this later
+	// FIXME: Should return whole block not just number
 
-	return Result{Value: head}, runInfo
+	// return Result{Value: head.Number}, runInfo
+	return Result{Value: 69420}, runInfo
 }
